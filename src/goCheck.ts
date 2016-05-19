@@ -45,9 +45,9 @@ function runTool(cmd: string, args: string[], cwd: string, severity: string, use
 					let [_, file, lineStr, charStr, reSeverity, msg] = match;
 					let line = +lineStr;
 					let char = +charStr;
-					if (char == 0) char = 1;
+					if (char === 0) char = 1;
 					file = path.resolve(cwd, path.basename(file));
-					let lineSeverity = reSeverity != '' ? reSeverity : severity;
+					let lineSeverity = reSeverity !== '' ? reSeverity : severity;
 					ret.push({ file: file, line: line, msg: msg, char: char, severity: lineSeverity });
 					outputChannel.appendLine(`${file}:${line}:${char}: ${msg}`);
 				}
@@ -83,10 +83,10 @@ export function check(filename: string, goConfig: vscode.WorkspaceConfiguration)
 		));
 	}
 	if (!!goConfig['lintOnSave']) {
-		let linter = goConfig['linter'];
+		let linter = goConfig['linter'] || 'golint';
 		let golint = getBinPath(linter);
 		let args = goConfig['lintFlags'] || [];
-		if (linter == 'golint') {
+		if (linter === 'golint') {
 			args.push(filename);
 		}
 		runningToolsPromises.push(runTool(

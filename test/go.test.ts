@@ -99,7 +99,7 @@ suite('Go Extension Tests', () => {
 		}).then(() => done(), done);
 	});
 
-	test('Error checking', (done) => {
+	test('Error checking using golint', (done) => {
 		let config = vscode.workspace.getConfiguration('go');
 		let expected = [
 			{ line: 7, severity: 'warning', msg: 'exported function Print2 should have comment or be unexported' },
@@ -108,6 +108,37 @@ suite('Go Extension Tests', () => {
 		];
 		check(path.join(fixturePath, 'errors.go'), config).then(diagnostics => {
 			let sortedDiagnostics = diagnostics.sort((a, b) => a.line - b.line);
+			for (let i in expected) {
+				assert.equal(sortedDiagnostics[i].line, expected[i].line);
+				assert.equal(sortedDiagnostics[i].severity, expected[i].severity);
+				assert.equal(sortedDiagnostics[i].msg, expected[i].msg);
+			}
+			assert.equal(sortedDiagnostics.length, expected.length, `too many errors ${JSON.stringify(sortedDiagnostics)}`);
+		}).then(() => done(), done);
+	});
+
+	test('Error checking using gometalinter', (done) => {
+		let config = vscode.workspace.getConfiguration('go');
+		config['linter'] = 'gometalinter';
+		let expected = [
+			{ line: 7, severity: 'warning', msg: 'Print2 is unused (deadcode)' },
+			{ line: 7, severity: 'warning', msg: 'exported function Print2 should have comment or be unexported (golint)' },
+			{ line: 10, severity: 'warning', msg: 'main2 is unused (deadcode)' },
+			{ line: 11, severity: 'warning', msg: 'undeclared name: prin (aligncheck)' },
+			{ line: 11, severity: 'error', msg: 'undeclared name: prin (gotype)' },
+			{ line: 11, severity: 'warning', msg: 'undeclared name: prin (interfacer)' },
+			{ line: 11, severity: 'warning', msg: 'undeclared name: prin (unconvert)' },
+			{ line: 11, severity: 'error', msg: 'undefined: prin' },
+			{ line: 11, severity: 'warning', msg: 'unused global variable undeclared name: prin (varcheck)' },
+			{ line: 11, severity: 'warning', msg: 'unused struct field undeclared name: prin (structcheck)' },
+		];
+		check(path.join(fixturePath, 'errors.go'), config).then(diagnostics => {
+			let sortedDiagnostics = diagnostics.sort((a, b) => {
+				if (a.line !== b.line) return a.line - b.line;
+				if (a.msg > b.msg) return 1;
+				if (a.msg < b.msg) return -1;
+				return 0;
+			});
 			for (let i in expected) {
 				assert.equal(sortedDiagnostics[i].line, expected[i].line);
 				assert.equal(sortedDiagnostics[i].severity, expected[i].severity);
