@@ -148,11 +148,12 @@ function runBuilds(document: vscode.TextDocument, goConfig: vscode.WorkspaceConf
 
 		errors.forEach(error => {
 			let canonicalFile = vscode.Uri.file(error.file).toString();
+			// Highlight lines from column 0 - 255 for all files.
+			// But for the current file, highlight line from first non-whitespace character to the end of line.
 			let startColumn = 0;
-			let endColumn = 1;
+			let endColumn = 255;
 			if (document && document.uri.toString() === canonicalFile) {
-				let range = new vscode.Range(error.line - 1, 0, error.line - 1, document.lineAt(error.line - 1).range.end.character + 1);
-				let text = document.getText(range);
+				let text = document.lineAt(error.line - 1).text;
 				let [_, leading, trailing] = /^(\s*).*(\s*)$/.exec(text);
 				startColumn = leading.length;
 				endColumn = text.length - trailing.length;

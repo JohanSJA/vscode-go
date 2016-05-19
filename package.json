@@ -219,7 +219,12 @@
         "go.lintOnSave": {
           "type": "boolean",
           "default": true,
-          "description": "Run 'golint' on save."
+          "description": "Run `linter` on save."
+        },
+        "go.linter": {
+          "type": "string",
+          "default": "golint",
+          "description": "`linter` to use. Pick between 'golint' and 'gometalinter'"
         },
         "go.lintFlags": {
           "type": "array",
@@ -227,7 +232,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Flags to pass to `golint` (e.g. ['-min_confidenc=.8'])"
+          "description": "Flags to pass to `linter` (e.g. ['-min_confidenc=.8'])"
         },
         "go.vetOnSave": {
           "type": "boolean",

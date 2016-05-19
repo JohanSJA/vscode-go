@@ -16,6 +16,7 @@ import { getCoverage } from './goCover';
 export interface ICheckResult {
 	file: string;
 	line: number;
+	char: number;
 	msg: string;
 	severity: string;
 }
@@ -39,13 +40,16 @@ function runTool(cmd: string, args: string[], cwd: string, severity: string, use
 						ret[ret.length - 1].msg += '\n' + lines[i];
 						continue;
 					}
-					let match = /^([^:]*: )?((.:)?[^:]*):(\d+)(:(\d+))?: (.*)$/.exec(lines[i]);
+					let match = /^([\w.\/]*):(\d+):(\d?):*(\w*):* (.*)$/.exec(lines[i]);
 					if (!match) continue;
-					let [_, __, file, ___, lineStr, ____, charStr, msg] = match;
+					let [_, file, lineStr, charStr, reSeverity, msg] = match;
 					let line = +lineStr;
-					file = path.resolve(cwd, file);
-					ret.push({ file, line, msg, severity });
-					outputChannel.appendLine(`${file}:${line}: ${msg}`);
+					let char = +charStr;
+					if (char == 0) char = 1;
+					file = path.resolve(cwd, path.basename(file));
+					let lineSeverity = reSeverity != '' ? reSeverity : severity;
+					ret.push({ file: file, line: line, msg: msg, char: char, severity: lineSeverity });
+					outputChannel.appendLine(`${file}:${line}:${char}: ${msg}`);
 				}
 				outputChannel.appendLine('');
 				resolve(ret);
@@ -79,15 +83,19 @@ export function check(filename: string, goConfig: vscode.WorkspaceConfiguration)
 		));
 	}
 	if (!!goConfig['lintOnSave']) {
-		let golint = getBinPath('golint');
-		let lintFlags = goConfig['lintFlags'] || [];
+		let linter = goConfig['linter'];
+		let golint = getBinPath(linter);
+		let args = goConfig['lintFlags'] || [];
+		if (linter == 'golint') {
+			args.push(filename);
+		}
 		runningToolsPromises.push(runTool(
 			golint,
-			[...lintFlags, filename],
+			args,
 			cwd,
 			'warning',
 			false,
-			'The "golint" command is not available.  Use "go get -u github.com/golang/lint/golint" to install.'
+			`The '${linter}' command is not available.  Please install it.`
 		));
 	}
 
